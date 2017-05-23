@@ -1,0 +1,22 @@
+{
+    "name": "xtwoend/minion-core",
+    "description": "MinionCore",
+    "license": "MIT",
+    "homepage": "http://minioncms.com",
+    "authors": [
+        {
+            "name": "Abdul Hafidz Anshari",
+            "email": "aditans88@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Minion\\": ""
+        },
+        "files": [
+            "helpers.php"
+        ]
+    },
+    "minimum-stability": "dev",
+    "require": {}
+}
