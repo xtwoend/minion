@@ -9,6 +9,9 @@
             "email": "aditans88@gmail.com"
         }
     ],
+    "require": {
+        "laravel/framework": "5.4.*"
+    },
     "autoload": {
         "psr-4": {
             "Minion\\": ""
@@ -17,6 +20,5 @@
             "helpers.php"
         ]
     },
-    "minimum-stability": "dev",
-    "require": {}
+    "minimum-stability": "dev"
 }
