@@ -51,6 +51,10 @@ class InstallCommand extends Command
                 $this->info('Start migration and seeder');
                 $this->call('migrate');
                 $this->call('db:seed');
+
+                $this->info('Publish themes assets');
+                $this->call('theme:publish');
+                $this->call('storage:link');
             }
         }
     }
