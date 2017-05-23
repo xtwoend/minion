@@ -55,6 +55,7 @@ class InstallCommand extends Command
                 $this->info('Publish themes assets');
                 $this->call('theme:publish');
                 $this->call('storage:link');
+                
             }
         }
     }
