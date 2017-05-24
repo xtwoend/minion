@@ -40,22 +40,33 @@ class InstallCommand extends Command
     public function handle()
     {
         if ($this->checkInstaller()) {
-            $this->generateEnvFile();
+            
+            $driver = $this->anticipate('Database driver ? (mysql or pgsql)', ['pgsql', 'mysql']);
+            $host = $this->ask('Database host?', 'localhost');
+            $port = $this->ask('Database port?', ($driver == 'pgsql') ? '5432' : '3306');
+            $name = $this->ask('Database name?');
+            $user = $this->ask('Database user?');
+            $password = $this->secret('Database password?');
+
+            $this->generateEnvFile($driver, $host, $port, $name, $user, $password);
 
             $this->call('key:generate');
 
             // check database
-            if (DB::connection()->getDatabaseName()) {
+            $this->setLaravelConfiguration($driver, $host, $port, $name, $user, $password);
+
+            if ($this->databaseConnectionIsValid()) {
                 $this->info('Database connected');
 
                 $this->info('Start migration and seeder');
                 $this->call('migrate');
                 $this->call('db:seed');
 
+                $this->migratePlugins();
+
                 $this->info('Publish themes assets');
                 $this->call('theme:publish');
                 $this->call('storage:link');
-                
             }
         }
     }
@@ -69,18 +80,21 @@ class InstallCommand extends Command
         return true;
     }
 
+    public function migratePlugins()
+    {
+        $plugins = app('plugins')->all();
+
+        foreach ($plugins as $name => $plugin) {
+            $this->call('plugin:migrate', [$name]);
+            $this->call('plugin:seed', [$name]);
+        }
+    }
+
     /**
      * generate .env file and fill the value from command.
      */
-    private function generateEnvFile()
+    private function generateEnvFile($databaseDriver, $databaseHost, $databasePort, $databaseName, $databaseUser, $databasePassword)
     {
-        // database section
-        $databaseDriver = $this->anticipate('Database driver ? (mysql or pgsql)', ['pgsql', 'mysql']);
-        $databaseHost = $this->ask('Database host?', 'localhost');
-        $databasePort = $this->ask('Database port?', ($databaseDriver == 'pgsql') ? '5432' : '3306');
-        $databaseName = $this->ask('Database name?');
-        $databaseUser = $this->ask('Database user?');
-        $databasePassword = $this->secret('Database password?');
 
         File::copy('.env.example', '.env');
 
@@ -132,5 +146,37 @@ class InstallCommand extends Command
         file_put_contents('.env', $newEnv);
 
         fclose($envContents);
+    }
+
+    /**
+     * @param $driver
+     * @param $name
+     * @param $port
+     * @param $user
+     * @param $password
+     */
+    protected function setLaravelConfiguration($driver, $host, $port, $name, $user, $password)
+    {
+        config(['app.env' => 'local']);
+        config(['database.default' => $driver]);
+        config(['database.connections.'.$driver.'.host' => $host]);
+        config(['database.connections.'.$driver.'.port' => $port]);
+        config(['database.connections.'.$driver.'.database' => $name]);
+        config(['database.connections.'.$driver.'.username' => $user]);
+        config(['database.connections.'.$driver.'.password' => $password]);
+    }
+
+    /**
+     * Is the database connection valid?
+     * @return bool
+     */
+    protected function databaseConnectionIsValid()
+    {
+        try {
+            app('db')->reconnect();
+            return true;
+        } catch (\PDOException $e) {
+            return false;
+        }
     }
 }
